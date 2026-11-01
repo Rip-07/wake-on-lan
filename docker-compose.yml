@@ -9,3 +9,20 @@ services:
       API_KEY: "${API_KEY:?API_KEY is required}"
       DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
       PORT: "${HOST_PORT:-8084}"
+
+  # Optional local PostgreSQL: docker compose --profile db up -d
+  db:
+    profiles: [db]
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wol
+      POSTGRES_DB: wol
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-change-me}"
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - wol-db:/var/lib/postgresql/data
+
+volumes:
+  wol-db:
