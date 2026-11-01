@@ -1,6 +1,11 @@
 # wake-on-lan
 
-Small Wake-on-LAN HTTP service in Rust (Axum + SeaORM + PostgreSQL). It stores a list of computers and sends a Magic Packet to one of them on request. Built for a homelab (Unraid, Docker with host networking).
+[![CI](https://github.com/Rip-07/wake-on-lan/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Rip-07/wake-on-lan/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Rust 2024](https://img.shields.io/badge/rust-edition%202024-orange.svg)](Cargo.toml)
+[![Image](https://img.shields.io/badge/image-ghcr.io%2Frip--07%2Fwake--on--lan-2496ED.svg)](https://github.com/Rip-07/wake-on-lan/pkgs/container/wake-on-lan)
+
+Wake up computers on your LAN with one authenticated HTTP call: a small Rust service (Axum + SeaORM + PostgreSQL) that stores your machines and sends them a Magic Packet. Built for a homelab (Unraid, Docker with host networking).
 
 [Русская версия ниже](#русский)
 
@@ -23,12 +28,19 @@ Small Wake-on-LAN HTTP service in Rust (Axum + SeaORM + PostgreSQL). It stores a
 
 The service exits with a clear error if `API_KEY` or `DATABASE_URL` is missing. See `.env.example`.
 
-## Run
+## Quick start
+
+Requires Linux with Docker (host networking; on Docker Desktop for Mac/Windows UDP broadcast does not reach your LAN).
 
 ```bash
-cp .env.example .env        # set API_KEY and DATABASE_URL
-docker compose up -d --build
+git clone https://github.com/Rip-07/wake-on-lan && cd wake-on-lan
+cp .env.example .env                      # set API_KEY (openssl rand -hex 32)
+docker compose --profile db up -d --build # service + bundled PostgreSQL
 ```
+
+Prebuilt image: `ghcr.io/rip-07/wake-on-lan` (replace `build: .` with `image: ghcr.io/rip-07/wake-on-lan:0.1.0`).
+
+Already have PostgreSQL? Point `DATABASE_URL` at it and run `docker compose up -d --build` without the profile.
 
 Host networking (`network_mode: host`) is required: UDP broadcast does not leave a bridged Docker network.
 
@@ -41,9 +53,9 @@ cargo run --release
 
 ## Add a computer
 
-```sql
-INSERT INTO computers (name, mac_address, broadcast_address)
-VALUES ('Workstation', 'AA:BB:CC:DD:EE:FF', '192.0.2.255');
+```bash
+docker compose exec db psql -U wol -c \
+  "INSERT INTO computers (name, mac_address, broadcast_address) VALUES ('Workstation', 'AA:BB:CC:DD:EE:FF', '192.0.2.255');"
 ```
 
 MAC may use `:` or `-` separators. `broadcast_address` is the IPv4 broadcast address of the target subnet.
@@ -96,20 +108,25 @@ HTTP-сервис Wake-on-LAN на Rust (Axum + SeaORM + PostgreSQL). Храни
 
 Без `API_KEY` или `DATABASE_URL` сервис завершается с понятной ошибкой. Пример — `.env.example`.
 
-### Запуск
+### Быстрый старт
+
+Нужен Linux с Docker (host networking; в Docker Desktop для Mac/Windows UDP broadcast не доходит до локальной сети).
 
 ```bash
-cp .env.example .env        # задайте API_KEY и DATABASE_URL
-docker compose up -d --build
+git clone https://github.com/Rip-07/wake-on-lan && cd wake-on-lan
+cp .env.example .env                      # задайте API_KEY (openssl rand -hex 32)
+docker compose --profile db up -d --build # сервис + PostgreSQL
 ```
+
+Если PostgreSQL уже есть, укажите его в `DATABASE_URL` и запускайте без `--profile db`.
 
 Нужен `network_mode: host`: UDP broadcast не выходит из bridge-сети Docker.
 
 ### Добавить компьютер
 
-```sql
-INSERT INTO computers (name, mac_address, broadcast_address)
-VALUES ('Рабочий ПК', 'AA:BB:CC:DD:EE:FF', '192.0.2.255');
+```bash
+docker compose exec db psql -U wol -c \
+  "INSERT INTO computers (name, mac_address, broadcast_address) VALUES ('Рабочий ПК', 'AA:BB:CC:DD:EE:FF', '192.0.2.255');"
 ```
 
 ### API
